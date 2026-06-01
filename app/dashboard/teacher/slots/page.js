@@ -16,13 +16,11 @@ export default function TeacherSlotsPage() {
   const [error, setError] = useState('');
   const router = useRouter();
 
-  if (!session || session.user.role !== 'teacher') {
-    return <div>Unauthorized</div>;
-  }
-
   useEffect(() => {
-    fetchSlots();
-  }, []);
+    if (session && session.user.role === 'teacher') {
+      fetchSlots();
+    }
+  }, [session]);
 
   const fetchSlots = async () => {
     try {
@@ -90,54 +88,64 @@ export default function TeacherSlotsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-900 to-slate-900 p-6">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold text-white mb-8">My Slots</h1>
+    <div className="min-h-screen bg-white p-6">
+      {(!session || session.user.role !== 'teacher') && (
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-red-100 border border-red-300 rounded-lg p-6 text-red-700">
+            <p className="font-bold mb-2">Unauthorized - teacher role required</p>
+            <p className="text-sm mb-4">Your account role: {session?.user?.role || 'none'} | Email: {session?.user?.email || 'not logged in'}</p>
+            <a href="/login" className="text-blue-600 hover:underline">Go back to login</a>
+          </div>
+        </div>
+      )}
+      {session && session.user.role === 'teacher' && (
+        <div className="max-w-6xl mx-auto">
+        <h1 className="text-4xl font-bold text-black mb-8">My Slots</h1>
 
         {/* Add Slot Form */}
-        <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl border border-white border-opacity-20 p-8 mb-8">
-          <h2 className="text-2xl font-bold text-white mb-6">Add New Slot</h2>
+        <div className="bg-gray-50 rounded-2xl border border-gray-200 p-8 mb-8 shadow-sm">
+          <h2 className="text-2xl font-bold text-black mb-6">Add New Slot</h2>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-500 bg-opacity-20 border border-red-500 rounded-lg text-red-200 text-sm">
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
               {error}
             </div>
           )}
 
           <form onSubmit={handleAddSlot} className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-white mb-2">Date</label>
+              <label className="block text-sm font-medium text-black mb-2">Date</label>
               <input
                 type="date"
                 name="date"
                 value={formData.date}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-2 bg-white bg-opacity-10 border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white mb-2">Start Time</label>
+              <label className="block text-sm font-medium text-black mb-2">Start Time</label>
               <input
                 type="time"
                 name="startTime"
                 value={formData.startTime}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-2 bg-white bg-opacity-10 border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white mb-2">End Time</label>
+              <label className="block text-sm font-medium text-black mb-2">End Time</label>
               <input
                 type="time"
                 name="endTime"
                 value={formData.endTime}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-2 bg-white bg-opacity-10 border border-white border-opacity-30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-violet-400"
+                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -145,7 +153,7 @@ export default function TeacherSlotsPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2 px-4 bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700 disabled:opacity-50 text-white font-semibold rounded-lg transition"
+                className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-lg transition"
               >
                 {loading ? 'Adding...' : 'Add Slot'}
               </button>
@@ -154,35 +162,35 @@ export default function TeacherSlotsPage() {
         </div>
 
         {/* Slots List */}
-        <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl border border-white border-opacity-20 p-8">
-          <h2 className="text-2xl font-bold text-white mb-6">Your Slots</h2>
+        <div className="bg-gray-50 rounded-2xl border border-gray-200 p-8 shadow-sm">
+          <h2 className="text-2xl font-bold text-black mb-6">Your Slots</h2>
 
           {slots.length === 0 ? (
-            <p className="text-violet-200">No slots created yet. Add one above!</p>
+            <p className="text-gray-600">No slots created yet. Add one above!</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="border-b border-white border-opacity-20">
-                    <th className="px-6 py-3 text-white font-semibold">Date</th>
-                    <th className="px-6 py-3 text-white font-semibold">Time</th>
-                    <th className="px-6 py-3 text-white font-semibold">Status</th>
-                    <th className="px-6 py-3 text-white font-semibold">Action</th>
+                  <tr className="border-b border-gray-200">
+                    <th className="px-6 py-3 text-black font-semibold">Date</th>
+                    <th className="px-6 py-3 text-black font-semibold">Time</th>
+                    <th className="px-6 py-3 text-black font-semibold">Status</th>
+                    <th className="px-6 py-3 text-black font-semibold">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {slots.map((slot) => (
-                    <tr key={slot._id} className="border-b border-white border-opacity-10 hover:bg-white hover:bg-opacity-5">
-                      <td className="px-6 py-4 text-white">{slot.date}</td>
-                      <td className="px-6 py-4 text-white">
+                    <tr key={slot._id} className="border-b border-gray-200 hover:bg-gray-50">
+                      <td className="px-6 py-4 text-black">{slot.date}</td>
+                      <td className="px-6 py-4 text-black">
                         {slot.startTime} - {slot.endTime}
                       </td>
                       <td className="px-6 py-4">
                         <span
                           className={`px-3 py-1 rounded-full text-sm font-semibold ${
                             slot.isBooked
-                              ? 'bg-red-500 bg-opacity-20 text-red-300'
-                              : 'bg-green-500 bg-opacity-20 text-green-300'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-green-100 text-green-700'
                           }`}
                         >
                           {slot.isBooked ? 'Booked' : 'Available'}
@@ -192,7 +200,7 @@ export default function TeacherSlotsPage() {
                         {!slot.isBooked && (
                           <button
                             onClick={() => handleDeleteSlot(slot._id)}
-                            className="px-4 py-2 bg-red-500 bg-opacity-20 text-red-300 hover:bg-opacity-30 rounded-lg transition font-semibold"
+                            className="px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg transition font-semibold"
                           >
                             Delete
                           </button>
@@ -206,6 +214,7 @@ export default function TeacherSlotsPage() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

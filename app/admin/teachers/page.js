@@ -9,13 +9,11 @@ export default function AdminTeachersPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState({});
 
-  if (!session || session.user.role !== 'admin') {
-    return <div>Unauthorized</div>;
-  }
-
   useEffect(() => {
-    fetchTeachers();
-  }, []);
+    if (session && session.user.role === 'admin') {
+      fetchTeachers();
+    }
+  }, [session]);
 
   const fetchTeachers = async () => {
     try {
@@ -57,7 +55,11 @@ export default function AdminTeachersPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-900 to-slate-900 p-6">
-      <div className="max-w-7xl mx-auto">
+      {(!session || session.user.role !== 'admin') && (
+        <div className="max-w-7xl mx-auto text-center text-violet-200">Unauthorized</div>
+      )}
+      {session && session.user.role === 'admin' && (
+        <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold text-white">Teacher Management</h1>
           <a
@@ -173,6 +175,7 @@ export default function AdminTeachersPage() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

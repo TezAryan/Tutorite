@@ -23,6 +23,17 @@ const sessionSchema = new mongoose.Schema(
       type: Number, // in minutes
       default: 0,
     },
+    callDuration: {
+      type: Number, // in seconds
+      default: 0,
+    },
+    callQuality: {
+      videoBitrate: Number,
+      audioBitrate: Number,
+      packetsLost: Number,
+      jitter: Number,
+      latency: Number,
+    },
     resources: [
       {
         type: String, // 'pdf' | 'link'

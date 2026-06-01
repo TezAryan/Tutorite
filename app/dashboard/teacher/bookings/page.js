@@ -8,13 +8,11 @@ export default function TeacherBookingsPage() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  if (!session || session.user.role !== 'teacher') {
-    return <div>Unauthorized</div>;
-  }
-
   useEffect(() => {
-    fetchBookings();
-  }, []);
+    if (session && session.user.role === 'teacher') {
+      fetchBookings();
+    }
+  }, [session]);
 
   const fetchBookings = async () => {
     try {
@@ -48,43 +46,47 @@ export default function TeacherBookingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-900 to-slate-900 p-6">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold text-white mb-8">Upcoming Sessions</h1>
+    <div className="min-h-screen bg-white p-6">
+      {(!session || session.user.role !== 'teacher') && (
+        <div className="max-w-7xl mx-auto text-center text-gray-600">Unauthorized</div>
+      )}
+      {session && session.user.role === 'teacher' && (
+        <div className="max-w-7xl mx-auto">
+        <h1 className="text-4xl font-bold text-black mb-8">Upcoming Sessions</h1>
 
         {loading ? (
-          <div className="text-center text-violet-200">Loading bookings...</div>
+          <div className="text-center text-gray-600">Loading bookings...</div>
         ) : bookings.length === 0 ? (
-          <div className="text-center text-violet-200">No bookings yet</div>
+          <div className="text-center text-gray-600">No bookings yet</div>
         ) : (
           <div className="grid gap-6">
             {bookings.map((booking) => (
               <div
                 key={booking._id}
-                className="bg-white bg-opacity-10 backdrop-blur-lg rounded-xl border border-white border-opacity-20 p-6"
+                className="bg-gray-50 rounded-xl border border-gray-200 p-6"
               >
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                   <div>
-                    <p className="text-violet-300 text-sm">Student</p>
-                    <p className="text-white font-semibold">
+                    <p className="text-gray-600 text-sm">Student</p>
+                    <p className="text-black font-semibold">
                       {booking.studentId?.userId?.name}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-violet-300 text-sm">Date</p>
-                    <p className="text-white font-semibold">{booking.slotId?.date}</p>
+                    <p className="text-gray-600 text-sm">Date</p>
+                    <p className="text-black font-semibold">{booking.slotId?.date}</p>
                   </div>
 
                   <div>
-                    <p className="text-violet-300 text-sm">Time</p>
-                    <p className="text-white font-semibold">
+                    <p className="text-gray-600 text-sm">Time</p>
+                    <p className="text-black font-semibold">
                       {booking.slotId?.startTime} - {booking.slotId?.endTime}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-violet-300 text-sm">Status</p>
+                    <p className="text-gray-600 text-sm">Status</p>
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-semibold ${
                         booking.status === 'completed'
@@ -103,8 +105,8 @@ export default function TeacherBookingsPage() {
 
                 {booking.doubtDescription && (
                   <div className="mb-4">
-                    <p className="text-violet-300 text-sm mb-2">Doubt Description</p>
-                    <p className="text-white">{booking.doubtDescription}</p>
+                    <p className="text-gray-600 text-sm mb-2">Doubt Description</p>
+                    <p className="text-black">{booking.doubtDescription}</p>
                   </div>
                 )}
 
@@ -113,13 +115,13 @@ export default function TeacherBookingsPage() {
                     <>
                       <button
                         onClick={() => handleStatusChange(booking._id, 'confirmed')}
-                        className="px-4 py-2 bg-green-500 bg-opacity-20 text-green-300 hover:bg-opacity-30 rounded-lg transition font-semibold"
+                        className="px-4 py-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg transition font-semibold"
                       >
                         Confirm
                       </button>
                       <button
                         onClick={() => handleStatusChange(booking._id, 'cancelled')}
-                        className="px-4 py-2 bg-red-500 bg-opacity-20 text-red-300 hover:bg-opacity-30 rounded-lg transition font-semibold"
+                        className="px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg transition font-semibold"
                       >
                         Decline
                       </button>
@@ -130,13 +132,13 @@ export default function TeacherBookingsPage() {
                     <>
                       <a
                         href={`/session/${booking._id}`}
-                        className="px-4 py-2 bg-violet-500 hover:bg-violet-600 text-white rounded-lg transition font-semibold"
+                        className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition font-semibold"
                       >
                         Join Session
                       </a>
                       <button
                         onClick={() => handleStatusChange(booking._id, 'completed')}
-                        className="px-4 py-2 bg-blue-500 bg-opacity-20 text-blue-300 hover:bg-opacity-30 rounded-lg transition font-semibold"
+                        className="px-4 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg transition font-semibold"
                       >
                         Mark Complete
                       </button>
@@ -148,6 +150,7 @@ export default function TeacherBookingsPage() {
           </div>
         )}
       </div>
+    )}
     </div>
   );
 }

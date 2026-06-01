@@ -6,7 +6,8 @@ export async function PATCH(request, { params }) {
   try {
     await connectDB();
 
-    const session = await Session.findById(params.id);
+    const { id } = await params;
+    const session = await Session.findById(id);
 
     if (!session) {
       return NextResponse.json(
@@ -40,7 +41,8 @@ export async function GET(request, { params }) {
   try {
     await connectDB();
 
-    const session = await Session.findById(params.id).populate('bookingId');
+    const { id } = await params;
+    const session = await Session.findById(id).populate('bookingId');
 
     if (!session) {
       return NextResponse.json(

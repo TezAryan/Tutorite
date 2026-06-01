@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import connectDB from '@/lib/db';
 import Slot from '@/models/Slot';
+import { authConfig } from '@/lib/auth';
 import Teacher from '@/models/Teacher';
 
 export async function DELETE(request, { params }) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authConfig);
 
     if (!session || session.user.role !== 'teacher') {
       return NextResponse.json(
@@ -25,7 +26,8 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    const slot = await Slot.findById(params.id);
+    const { id } = await params;
+    const slot = await Slot.findById(id);
 
     if (!slot) {
       return NextResponse.json(
@@ -48,7 +50,7 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    await Slot.findByIdAndDelete(params.id);
+    await Slot.findByIdAndDelete(id);
 
     return NextResponse.json(
       { message: 'Slot deleted successfully' },
@@ -67,7 +69,8 @@ export async function GET(request, { params }) {
   try {
     await connectDB();
 
-    const slot = await Slot.findById(params.id).populate('teacherId');
+    const { id } = await params;
+    const slot = await Slot.findById(id).populate('teacherId');
 
     if (!slot) {
       return NextResponse.json(

@@ -13,13 +13,11 @@ export default function StudentHistoryPage() {
     end: '',
   });
 
-  if (!session || session.user.role !== 'student') {
-    return <div>Unauthorized</div>;
-  }
-
   useEffect(() => {
-    fetchBookings();
-  }, []);
+    if (session && session.user.role === 'student') {
+      fetchBookings();
+    }
+  }, [session]);
 
   const fetchBookings = async () => {
     try {
@@ -67,7 +65,11 @@ export default function StudentHistoryPage() {
 
   return (
     <div className="min-h-screen bg-white p-6">
-      <div className="max-w-7xl mx-auto">
+      {(!session || session.user.role !== 'student') && (
+        <div className="max-w-7xl mx-auto text-center text-gray-600">Unauthorized</div>
+      )}
+      {session && session.user.role === 'student' && (
+        <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-bold text-black mb-8">My Learning History</h1>
 
         {/* Filters */}
@@ -205,6 +207,8 @@ export default function StudentHistoryPage() {
           </div>
         )}
       </div>
+      )}
+    </div>
     </div>
   );
 }

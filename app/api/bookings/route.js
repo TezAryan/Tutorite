@@ -2,15 +2,23 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import connectDB from '@/lib/db';
 import Booking from '@/models/Booking';
+import { authConfig } from '@/lib/auth';
 import Slot from '@/models/Slot';
 import Student from '@/models/Student';
 import Teacher from '@/models/Teacher';
 
 export async function POST(request) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authConfig);
 
-    if (!session || session.user.role !== 'student') {
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    if (session.user.role !== 'student') {
       return NextResponse.json(
         { error: 'Unauthorized - student role required' },
         { status: 403 }
@@ -82,7 +90,7 @@ export async function POST(request) {
 
 export async function GET(request) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authConfig);
 
     if (!session) {
       return NextResponse.json(
@@ -125,4 +133,8 @@ export async function GET(request) {
       { status: 500 }
     );
   }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 200 });
 }

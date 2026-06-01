@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import connectDB from '@/lib/db';
 import Booking from '@/models/Booking';
+import { authConfig } from '@/lib/auth';
 import Teacher from '@/models/Teacher';
 
 export async function PATCH(request, { params }) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authConfig);
 
     if (!session) {
       return NextResponse.json(
@@ -17,7 +18,8 @@ export async function PATCH(request, { params }) {
 
     await connectDB();
 
-    const booking = await Booking.findById(params.id);
+    const { id } = await params;
+    const booking = await Booking.findById(id);
 
     if (!booking) {
       return NextResponse.json(
@@ -72,7 +74,8 @@ export async function GET(request, { params }) {
   try {
     await connectDB();
 
-    const booking = await Booking.findById(params.id)
+    const { id } = await params;
+    const booking = await Booking.findById(id)
       .populate('studentId')
       .populate('teacherId')
       .populate('slotId');

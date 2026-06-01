@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -60,6 +61,9 @@ export default function RegisterPage() {
         throw new Error(data.error || 'Registration failed');
       }
 
+      // Sign out any existing session before redirecting to login
+      await signOut({ redirect: false });
+      
       router.push('/login?registered=true');
     } catch (err) {
       setError(err.message);

@@ -3,10 +3,11 @@ import { getServerSession } from 'next-auth/next';
 import connectDB from '@/lib/db';
 import Slot from '@/models/Slot';
 import Teacher from '@/models/Teacher';
+import { authConfig } from '@/lib/auth';
 
 export async function POST(request) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authConfig);
 
     if (!session || session.user.role !== 'teacher') {
       return NextResponse.json(

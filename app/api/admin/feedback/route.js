@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import connectDB from '@/lib/db';
+import { authConfig } from '@/lib/auth';
 import Rating from '@/models/Rating';
 
 export async function GET(request) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authConfig);
 
     if (!session || session.user.role !== 'admin') {
       return NextResponse.json(

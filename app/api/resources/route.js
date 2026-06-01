@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import connectDB from '@/lib/db';
 import Session from '@/models/Session';
+import { authConfig } from '@/lib/auth';
 
 export async function POST(request) {
   // This endpoint handles resource uploads to sessions
@@ -9,7 +10,7 @@ export async function POST(request) {
   // For now, we just store URL references
 
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authConfig);
 
     if (!session) {
       return NextResponse.json(

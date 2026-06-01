@@ -4,10 +4,11 @@ import connectDB from '@/lib/db';
 import Teacher from '@/models/Teacher';
 import User from '@/models/User';
 import Booking from '@/models/Booking';
+import { authConfig } from '@/lib/auth';
 
 export async function GET(request) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authHandler);
 
     if (!session || session.user.role !== 'admin') {
       return NextResponse.json(
@@ -56,7 +57,7 @@ export async function GET(request) {
 
 export async function PATCH(request) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authConfig);
 
     if (!session || session.user.role !== 'admin') {
       return NextResponse.json(

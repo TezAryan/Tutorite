@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import connectDB from '@/lib/db';
 import Session from '@/models/Session';
+import { authConfig } from '@/lib/auth';
 import Booking from '@/models/Booking';
 
 export async function POST(request) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authConfig);
 
     if (!session) {
       return NextResponse.json(

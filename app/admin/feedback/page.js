@@ -10,13 +10,11 @@ export default function AdminFeedbackPage() {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({});
 
-  if (!session || session.user.role !== 'admin') {
-    return <div>Unauthorized</div>;
-  }
-
   useEffect(() => {
-    fetchFeedback();
-  }, [page]);
+    if (session && session.user.role === 'admin') {
+      fetchFeedback();
+    }
+  }, [session, page]);
 
   const fetchFeedback = async () => {
     try {
@@ -36,7 +34,11 @@ export default function AdminFeedbackPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-900 to-slate-900 p-6">
-      <div className="max-w-7xl mx-auto">
+      {(!session || session.user.role !== 'admin') && (
+        <div className="max-w-7xl mx-auto text-center text-violet-200">Unauthorized</div>
+      )}
+      {session && session.user.role === 'admin' && (
+        <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold text-white">Student Feedback</h1>
           <a
@@ -138,6 +140,7 @@ export default function AdminFeedbackPage() {
           </>
         )}
       </div>
+      )}
     </div>
   );
 }
