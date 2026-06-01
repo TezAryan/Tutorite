@@ -131,7 +131,8 @@ export default function VideoCall({ bookingId, remoteRole }) {
           console.log('Offer sent:', offerData);
         } else {
           // Student waits and responds with answer
-          const pollForOffer = setInterval(async () => {
+          let pollForOfferInterval = null;
+          pollForOfferInterval = setInterval(async () => {
             try {
               const answerResponse = await fetch('/api/webrtc/signaling', {
                 method: 'POST',
@@ -145,7 +146,7 @@ export default function VideoCall({ bookingId, remoteRole }) {
               const answerData = await answerResponse.json();
 
               if (answerData.offer) {
-                clearInterval(pollForOffer);
+                clearInterval(pollForOfferInterval);
 
                 await peerConnection.setRemoteDescription(
                   new RTCSessionDescription(answerData.offer)
@@ -170,10 +171,13 @@ export default function VideoCall({ bookingId, remoteRole }) {
               console.error('Error polling for offer:', error);
             }
           }, 1000);
+
+          // Store interval ID for cleanup
+          peerConnectionRef.current.pollForOfferInterval = pollForOfferInterval;
         }
 
         // Poll for ICE candidates
-        const pollCandidates = setInterval(async () => {
+        let pollCandidatesInterval = setInterval(async () => {
           try {
             const candidateResponse = await fetch('/api/webrtc/signaling', {
               method: 'POST',
@@ -202,8 +206,17 @@ export default function VideoCall({ bookingId, remoteRole }) {
           }
         }, 500);
 
+        // Store interval ID for cleanup
+        peerConnectionRef.current.pollCandidatesInterval = pollCandidatesInterval;
+
         return () => {
-          clearInterval(pollCandidates);
+          // Clear polling intervals
+          if (pollCandidatesInterval) {
+            clearInterval(pollCandidatesInterval);
+          }
+          if (peerConnectionRef.current?.pollForOfferInterval) {
+            clearInterval(peerConnectionRef.current.pollForOfferInterval);
+          }
         };
       } catch (err) {
         console.error('Error initializing call:', err);
@@ -215,8 +228,36 @@ export default function VideoCall({ bookingId, remoteRole }) {
     initializeCall();
 
     return () => {
-      if (localStreamRef.current) {
-        stopStream(localStreamRef.current);
+      // Comprehensive cleanup on component unmount or dependency change
+      try {
+        // Stop all tracks in local stream
+        if (localStreamRef.current) {
+          localStreamRef.current.getTracks().forEach((track) => {
+            track.stop();
+          });
+        }
+
+        // Close peer connection
+        if (peerConnectionRef.current) {
+          peerConnectionRef.current.getSenders().forEach((sender) => {
+            try {
+              sender.track?.stop();
+            } catch (err) {
+              console.error('Error stopping sender track:', err);
+            }
+          });
+          peerConnectionRef.current.close();
+        }
+
+        // Clear video elements
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = null;
+        }
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = null;
+        }
+      } catch (err) {
+        console.error('Error during cleanup:', err);
       }
     };
   }, [session, bookingId]);
@@ -245,13 +286,53 @@ export default function VideoCall({ bookingId, remoteRole }) {
     }
   };
 
-  const handleToggleCamera = () => {
-    if (localStreamRef.current) {
-      const videoTracks = localStreamRef.current.getVideoTracks();
+  const handleToggleCamera = async () => {
+    if (!localStreamRef.current) return;
+
+    const videoTracks = localStreamRef.current.getVideoTracks();
+
+    if (!isCameraOff) {
+      // Turn off camera - stop the video tracks completely
       videoTracks.forEach((track) => {
-        track.enabled = !track.enabled;
+        track.stop();
       });
-      setIsCameraOff(!isCameraOff);
+      setIsCameraOff(true);
+    } else {
+      // Turn on camera - need to request new camera stream
+      try {
+        const newStream = await getLocalStream({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false, // Don't request audio again, we already have it
+        });
+
+        // Replace video tracks in peer connection
+        if (peerConnectionRef.current) {
+          const videoTracks = newStream.getVideoTracks();
+          if (videoTracks.length > 0) {
+            const sender = peerConnectionRef.current
+              .getSenders()
+              .find((s) => s.track?.kind === 'video');
+            
+            if (sender) {
+              await sender.replaceTrack(videoTracks[0]);
+            } else {
+              // If no sender exists, add the track
+              peerConnectionRef.current.addTrack(videoTracks[0], localStreamRef.current);
+            }
+          }
+        }
+
+        // Update local stream with new video track
+        localStreamRef.current.getVideoTracks().forEach((track) => track.stop());
+        newStream.getVideoTracks().forEach((track) => {
+          localStreamRef.current.addTrack(track);
+        });
+
+        setIsCameraOff(false);
+      } catch (err) {
+        console.error('Error turning on camera:', err);
+        setError('Failed to turn on camera. Please check your permissions.');
+      }
     }
   };
 
@@ -270,17 +351,48 @@ export default function VideoCall({ bookingId, remoteRole }) {
       console.error('Error ending call:', error);
     }
 
-    // Close peer connection
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
-    }
-
-    // Stop local stream
+    // Stop all media tracks completely
     if (localStreamRef.current) {
-      stopStream(localStreamRef.current);
+      localStreamRef.current.getTracks().forEach((track) => {
+        track.stop();
+      });
+      localStreamRef.current = null;
     }
 
+    // Close peer connection and all senders
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.getSenders().forEach((sender) => {
+        try {
+          sender.track?.stop();
+        } catch (err) {
+          console.error('Error stopping sender track:', err);
+        }
+      });
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+
+    // Clear video elements
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = null;
+    }
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = null;
+    }
+
+    // Reset state
     setConnectionStatus('disconnected');
+    setIsMuted(false);
+    setIsCameraOff(false);
+    setCallDuration(0);
+    setError(null);
+  };
+
+  const handleRetry = () => {
+    setError(null);
+    setConnectionStatus('disconnected');
+    // Re-trigger the initialization by forcing a re-run of the useEffect
+    // This will happen automatically on the next render cycle
   };
 
   const formatDuration = (seconds) => {
@@ -296,6 +408,24 @@ export default function VideoCall({ bookingId, remoteRole }) {
 
   return (
     <div className="w-full max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+      {/* Error Alert */}
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-red-800 mb-1">Connection Error</h3>
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+            <button
+              onClick={handleRetry}
+              className="ml-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm font-medium whitespace-nowrap"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+      
       {/* Video Container */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-black min-h-96">
         {/* Local Video */}
@@ -358,7 +488,6 @@ export default function VideoCall({ bookingId, remoteRole }) {
               </span>
             )}
           </div>
-          {error && <span className="text-sm text-red-600">{error}</span>}
         </div>
 
         {/* Control Buttons */}

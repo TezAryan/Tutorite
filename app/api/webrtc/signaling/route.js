@@ -1,7 +1,9 @@
 import { getServerSession } from 'next-auth/next';
 import { authConfig } from '@/lib/auth';
-import { connectDB } from '@/lib/db';
+import connectDB from '@/lib/db';
 import Booking from '@/models/Booking';
+import Teacher from '@/models/Teacher';
+import Student from '@/models/Student';
 
 // In-memory storage for signaling data (in production, use Redis or database)
 const signalingData = new Map();
@@ -30,8 +32,12 @@ export async function POST(req) {
       });
     }
 
-    const isTeacher = session.user.id === booking.teacherId.toString();
-    const isStudent = session.user.id === booking.studentId.toString();
+    // Check if user is the teacher or student in this booking
+    const teacher = await Teacher.findById(booking.teacherId);
+    const student = await Student.findById(booking.studentId);
+
+    const isTeacher = teacher && teacher.userId.toString() === session.user.id;
+    const isStudent = student && student.userId.toString() === session.user.id;
 
     if (!isTeacher && !isStudent) {
       return new Response(JSON.stringify({ error: 'Unauthorized access to booking' }), {
